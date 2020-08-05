@@ -280,7 +280,7 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
 
         ########################################### Eq. 36 in the reference paper ####################################
         for i in LinearIndices(DK)
-            if (  isapprox(xK[i],ci[i],atol=1E-12) && DK[i]>0) || ( isapprox(xK[i],cs[i],atol=1E-12) && DK[i]<0)
+            if (  isapprox(xK[i],ci[i],atol=l0) && DK[i]>0) || ( isapprox(xK[i],cs[i],atol=l0) && DK[i]<0)
                DK[i] =0
             end      
         end    
@@ -309,13 +309,13 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
             end        
 
             # For testing purposes only 
-            if (length(Alpha_S)>0 && Alpha_S[end]<=0.0) 
+            #if (length(Alpha_S)>0 && Alpha_S[end]<=0.0) 
                 #println("Warning:: This should not happen (STEP 9) negative step $(Alpha_S) ")
                 # Delete the invalid step (it is a numeric rounding error...)
                 #println(" $(DK[i]) $(ci[i])  $(xk[i]) $(cs[i]) ")
-                DK[i] = 0
-                pop!(Alpha_S)
-            end
+            #    DK[i] = 0
+            #    pop!(Alpha_S)
+            #end
         end
 
         ######################################### STEPS 8 to 15 in Alg. 3 ############################################ 
