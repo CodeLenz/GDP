@@ -19,6 +19,7 @@
     xr = readdlm("testcase_large/ref_x.dat")
     @test isapprox(xs,xr)
 
+  #=
     println("\n\n####################################################################################################################\n  
                  Test 3.2 - Compare time when using WallE to solve 3.1 (GC) 
                \n####################################################################################################################")
@@ -27,6 +28,6 @@
     println("Topology can be displayed with: gmsh saida_WALLE.pos")
     include("testcase_large/main_LA-WALLE.jl")
     tempo2 = @timed begin xswe = Min_Compliance_WALLE(20,12); end
-
+  =#
 
 end #testset
