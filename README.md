@@ -1,5 +1,5 @@
 # GDP
-Bounding Box Optimizer for large problems where the optimal solution lies on the boundary. The algorithm is a modified Steepest Descent projecting infeasible variables to the boundary of the feasible design space (defined by the side constraints ci and cs) and with no line-search.  
+Bounding Box Optimizer for large problems where the optimal solution lies on the boundary. The algorithm is a modified Steepest Descent projecting infeasible variables to the boundary of the feasible design space (defined by the side constraints ci and cs) and with no line-search (there is no need to inform the objective function). 
 
 Example
 
@@ -44,9 +44,25 @@ Default input options are
     "SHOW"=>true
 
 ```
-where NITER is the maximum number of iterations
-      TOL_NORM is the tolerance to assess convergence
-      ALPHA_0 is the initial step length (do no change unless you read the theory)
-      FACTOR_Z (do no change unless you read the theory)
-      MIN_STEP is the minimum step used to skip the loop (if this value is used for the last 5 iterations)
-      SHOW prints information ou, if false, runs silently
+where NITER is the maximum number of iterations \\
+      TOL_NORM is the tolerance to assess convergence \\
+      ALPHA_0 is the initial step length (do no change unless you read the theory) \\
+      FACTOR_Z (do no change unless you read the theory) \\
+      MIN_STEP is the minimum step used to skip the loop (if this value is used for the last 5 iterations) \\
+      SHOW prints information ou, if false, runs silently. \\
+
+Default output options are
+
+```julia
+    "RESULT"=>x 
+    "CONVERGED"=>flag_conv
+    "NORM"=>norm_D
+    "ITERS"=>counter
+```
+where RESULT contains the vector of design variables \\
+      CONVERGED is true if all the first order conditions are met \\
+      NORM is the norm of the gradient of free (unconstrained) variables \\
+      ITERS is the effective number of iterations.
+
+
+
