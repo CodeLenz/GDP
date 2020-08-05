@@ -44,7 +44,7 @@ Default input options are
     "SHOW"=>true
 
 ```
-where NITER is the maximum number of iterations, TOL_NORM is the tolerance to assess convergence, ALPHA_0 is the initial step length (do no change unless you read the theory), FACTOR_Z (do no change unless you read the theory), MIN_STEP is the minimum step used to skip the loop (if this value is used for the last 5 iterations) and SHOW prints information ou, if false, runs silently. 
+where NITER is the maximum number of iterations, TOL_NORM is the tolerance to assess convergence, ALPHA_0 is the initial step length (do no change unless you read the theory), FACTOR_Z (do no change unless you read the theory), MIN_STEP is the minimum step used to skip the loop (if this value is used for the last 5 iterations) and SHOW prints information or, if false, runs silently. 
       
 
 Default output options are
