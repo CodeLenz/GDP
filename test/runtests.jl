@@ -1,6 +1,5 @@
 using Test
-include("GDP.jl")
-using .GDP
+using GDP
 
 
 # Run tests
