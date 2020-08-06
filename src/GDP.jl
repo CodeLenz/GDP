@@ -158,7 +158,7 @@ end # Project
   push!(inputs,"TOL_NORM"=>1E-6)  \\
   push!(inputs,"LAMBDA_0"=>1E-10) \\
   push!(inputs,"FACTOR_Z"=>0.99) \\
-  push!(inputs,"MIN_STEO"=>1E-12) \\
+  push!(inputs,"MIN_STEP"=>1E-12) \\
   push!(inputs,"SHOW"=>true) \\
      
   where \\ 
@@ -307,15 +307,6 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
             elseif DK[i]<0 && cs[i]< Inf
                push!(Alpha_S, (xk[i]-cs[i])/DK[i])
             end        
-
-            # For testing purposes only 
-            #if (length(Alpha_S)>0 && Alpha_S[end]<=0.0) 
-                #println("Warning:: This should not happen (STEP 9) negative step $(Alpha_S) ")
-                # Delete the invalid step (it is a numeric rounding error...)
-                #println(" $(DK[i]) $(ci[i])  $(xk[i]) $(cs[i]) ")
-            #    DK[i] = 0
-            #    pop!(Alpha_S)
-            #end
         end
 
         ######################################### STEPS 8 to 15 in Alg. 3 ############################################ 

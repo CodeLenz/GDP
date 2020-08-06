@@ -11,12 +11,12 @@
     println("Wait...it takes some time to complete. Number of design variables = $(20*12). Solution at the boundary of S")
     println("Topology can be displayed with: gmsh saida.pos")
 
-    include("testcase_large/main_LA.jl")
+    include("testcase_large/topopt_flex_proj/main_LA.jl")
     tempo1= @timed begin xs = Min_Compliance(20,12); end
 
     # Read a reference solution
     using DelimitedFiles
-    xr = readdlm("testcase_large/ref_x.dat")
+    xr = readdlm("testcase_large/topopt_flex_proj/ref_x.dat")
     @test isapprox(xs,xr)
 
   #=
