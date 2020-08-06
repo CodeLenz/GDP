@@ -21,6 +21,7 @@ module GDP
     push!(inputs,"ALPHA_0"=>1E-10)
     push!(inputs,"FACTOR_Z"=>0.99)
     push!(inputs,"MIN_STEP"=>1E-12)
+    push!(inputs,"NESTEROV"=>false)
     push!(inputs,"SHOW"=>true)
     
     return inputs
@@ -40,6 +41,7 @@ function Check_inputs(df::Function, x0::Array{Float64}, ci::Array{Float64}, cs::
     alpha_0    = inputs["ALPHA_0"]
     factor_z   = inputs["FACTOR_Z"]
     min_alpha  = inputs["MIN_STEP"]
+    flag_nesterov = inputs["NESTEROV"]
     flag_show  = inputs["SHOW"]
     
     
@@ -65,7 +67,7 @@ function Check_inputs(df::Function, x0::Array{Float64}, ci::Array{Float64}, cs::
     @assert 0 < min_alpha < alpha_0 "Solve::Check_inputs:: MIN_STEP must be in (0,ALPHA_0)"
 
     # Return input parameters to the caller
-    return nmax_iter,tol_norm, alpha_0, factor_z, min_alpha, flag_show
+    return nmax_iter,tol_norm, alpha_0, factor_z, min_alpha, flag_nesterov, flag_show
 
 end
 
@@ -158,7 +160,8 @@ end # Project
   push!(inputs,"TOL_NORM"=>1E-6)  \\
   push!(inputs,"LAMBDA_0"=>1E-10) \\
   push!(inputs,"FACTOR_Z"=>0.99) \\
-  push!(inputs,"MIN_STEO"=>1E-12) \\
+  push!(inputs,"MIN_STEP"=>1E-12) \\
+  push!(inputs,"NESTEROV"=>false) \\
   push!(inputs,"SHOW"=>true) \\
      
   where \\ 
@@ -168,6 +171,7 @@ end # Project
   ALPHA_0 is the initial step length (see reference manuscript)\\
   FACTOR_Z is used to reduce the step length if it is a singular step\\
   If the step is smaller than MIN_STEP for the last 5 iterations, we terminate the subroutine \\   
+  NESTEROV activates acceleration \\  
   SHOW enables a brief report at the end   \\
   
   Outputs are returned as a dictionary with entries \\
@@ -203,26 +207,39 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
 
     # Test the inputs for any inconsistency and recover 
     # the input parameters  
-    niter, tol, l0, factor_z, alpha_min, flag_show = Check_inputs(df, x0, ci, cs, inputs)
+    niter, tol, α0, factor_z, α_min, flag_nesterov, flag_show = Check_inputs(df, x0, ci, cs, inputs)
 
     # counts if the number of iterations with step <= alpha_min
-    cont_alpha_min = 0
+    cont_α_min = 0
 
     # k means actual iteration and K means next iteration
 
     # List of variables (auxiliar)
     lvar = 1:length(x0)
 
+    # Used to evaluate α
+    T1 = 0.0
+
     # Steps
-    lk = l0
-    lK = l0
+    αk = α0
+    αK = α0
 
     # Thetas    
-    Tk = Inf
-    TK = Inf
+    θk = Inf
+    θK = Inf
+
+    # THETAS
+    Ok = Inf
+    OK = Inf
+   
+    # Lambdas
+    Λk = α0
+    ΛK = α0
+    Λ = α0
 
     # Copy of x0, for subsequent iterations
     xk = copy(x0)
+    yk = copy(x0)
 
     # Initial gradient
     Dk = df(xk) 
@@ -230,7 +247,7 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
     ###################################################  STEPS 2,3 and 4 in ALg. 3 ###################################################
 
     # First step 
-    xK = xk - l0*Dk
+    xK = xk - α0*Dk
 
     #
     # Project x and obtains active and inactive sets of variables  
@@ -238,6 +255,10 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
     # Steps 2, 3 and 4 in Alg. 3
     #
     active_r, active_r_ci, active_r_cs, free_x = Project!(xK,ci,cs) 
+
+    # First Nesterov step
+    y = copy(xK)
+    yK = copy(xK)
 
     #################################################################################################################################
 
@@ -280,24 +301,28 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
 
         ########################################### Eq. 36 in the reference paper ####################################
         for i in LinearIndices(DK)
-            if (  isapprox(xK[i],ci[i],atol=l0) && DK[i]>0) || ( isapprox(xK[i],cs[i],atol=l0) && DK[i]<0)
+            if (isapprox(xK[i],ci[i],atol=α0) && DK[i]>0) || ( isapprox(xK[i],cs[i],atol=α0) && DK[i]<0)
                DK[i] =0
             end      
         end    
 
         ######################################### STEP 6 in Alg. 3 ################################################### 
-        T1 = sqrt(1+Tk)*lk
+        if flag_nesterov
+           T1 = sqrt(1+θk/2)*αk
+        else
+           T1 = sqrt(1+θk)*αk
+        end
         T2 = norm(xK-xk) / (2*norm(DK-Dk))
-        passo  = min(T1,T2)
+        α  = min(T1,T2)
 
-        if isnan(passo)
+        if isnan(α)
             if flag_show
                println("It seems that we are stuck, since Δx=$(norm(xK-xk)) and ΔD=$(norm(DK-Dk)). Skipping the loop." ) 
             end   
             break
         end
 
-        @assert passo > 0.0 "GPD::Solve:: step is <=0 ($passo)  $T1  $T2 $Tk $lk $(norm(xK-xk))" 
+        @assert α > 0.0 "GPD::Solve:: step is <=0 ($α)  $T1  $T2 $Tk $lk $(norm(xK-xk))" 
 
         ######################################### STEP 9 in Alg. 3 (Eq. 38) ##########################################
         Alpha_S = Float64[]
@@ -307,49 +332,54 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
             elseif DK[i]<0 && cs[i]< Inf
                push!(Alpha_S, (xk[i]-cs[i])/DK[i])
             end        
-
-            # For testing purposes only 
-            #if (length(Alpha_S)>0 && Alpha_S[end]<=0.0) 
-                #println("Warning:: This should not happen (STEP 9) negative step $(Alpha_S) ")
-                # Delete the invalid step (it is a numeric rounding error...)
-                #println(" $(DK[i]) $(ci[i])  $(xk[i]) $(cs[i]) ")
-            #    DK[i] = 0
-            #    pop!(Alpha_S)
-            #end
         end
 
         ######################################### STEPS 8 to 15 in Alg. 3 ############################################ 
         aflag = true
         while (aflag)
-            if passo in Alpha_S
-               println("It hapened ! $passo")
-               passo = passo*factor_z
+            if α in Alpha_S
+               println("It hapened ! $α ")
+               α = α*factor_z
             else
                aflag = false
             end
         end        
-
+        
+    
         
         # next step
-        x = xK - passo*DK
+        if flag_nesterov
+           T1 =  sqrt(1+Ok/2)*Λk
+           T2 =  norm(DK-Dk) / (2*norm(xK-xk))
+           Λ =  min(T1,T2)
+        
+           β = (sqrt(1/α) - sqrt(Λ)) / ((sqrt(1/α) + sqrt(Λ)))
+
+           y = xK - α*DK
+           _ = Project!(y,ci,cs) 
+           x = y + β*(y-yk)
+           active_r, active_r_ci, active_r_cs, free_x = Project!(x,ci,cs) 
+        else
+            x = xK - α*DK
+            active_r, active_r_ci, active_r_cs, free_x = Project!(x,ci,cs)
+        end
 
         #
         # Project x and obtains active and inactive sets of variables  
         # Those sets are used to check for first order conditions
         # Steps 16, 17 and 18 in Alg. 3
         #
-        active_r, active_r_ci, active_r_cs, free_x = Project!(x,ci,cs) 
-
+        
         #
         # If the minimum step allowed by the user is used in at least 5 iterations, we can bail outputs
         #
-        if passo <= alpha_min
-            cont_alpha_min += 1
+        if α <= α_min
+            cont_α_min += 1
          else 
-            cont_alpha_min = 1
+            cont_α_min = 1
          end
  
-         if cont_alpha_min==5
+         if cont_α_min==5
              if flag_show
                 println(" Step is too small during 5 consecutive iterations. Skipping")
              end   
@@ -358,17 +388,27 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
  
 
         # Step 19 in Alg. 3
-        T = passo/lk
+        θ = α/αk
+        O = Λ/Λk
 
         # Offsets
         xk .= xK
         xK .= x
 
-        lk = lK
-        lK = passo
+        yk .= yK
+        yK .= y
 
-        Tk = TK
-        TK = T
+        αk = αK
+        αK = α
+
+        θk = θK
+        θK = θ
+
+        Ok = OK
+        OK = O
+
+        Λk = ΛK
+        ΛK = Λ
 
         Dk .= DK
 
@@ -376,9 +416,10 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
         if flag_show
             ProgressMeter.next!(Prg; showvalues = [
             (:Iteration,k), 
+            (:"Using Nesterov",flag_nesterov), 
             (:"Norm at free variables",norm_D), 
             (:"Target norm",tol),
-            (:"Current Step",passo),
+            (:"Current Step",α),
             (:"Number of variables in the lower bound",length(active_r_ci)),
             (:"First order for lower bound?",all(delta_m .>= -tol)||isempty(delta_m)),
             (:"Number of variables in the upper bound",length(active_r_cs)),
@@ -394,6 +435,7 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
         println("\n********************************************************")
         println("End of the main optimization Loop")
         println("Number of variables    : $(n)")
+        println("Nesterov               : $(flag_nesterov)")
         println("Free variables         : ", length(free_x))
         println("Blocked variables      : ", length(active_r),": ",  length(active_r_ci)," for lower bound ",length(active_r_cs)," for upper bound")
         println("Number of iterations   : ", contador , " of ",niter)

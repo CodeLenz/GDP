@@ -31,11 +31,20 @@
     options = GDP.Init()
     options["NITER"] = 100
     output = GDP.Solve(df,x0,ci,cs,options)
-    
+
+
     # The tests
     @test isapprox(output["RESULT"],[3.0 ; 5.0],rtol=1E-2)
     @test output["CONVERGED"]
     println("\nNumber of iterations ",output["ITERS"])
+
+    options["NESTEROV"] = true
+    output_nesterov = GDP.Solve(df,x0,ci,cs,options)
+
+    @test isapprox(output_nesterov["RESULT"],[3.0 ; 5.0],rtol=1E-2)
+    @test output_nesterov["CONVERGED"]
+    println("\nNumber of iterations using Nesterov ",output_nesterov["ITERS"])
+
 
     #println("\n","# Result #")
     #show(IOContext(stdout, :compact => false, :limit => false), "text/plain", [x_opt [3.0 ; 5.0]])
@@ -76,6 +85,11 @@
     @test output["CONVERGED"]
     println("\nNumber of iterations ",output["ITERS"])
    
+    options["NESTEROV"] = true
+    output_nesterov = GDP.Solve(df,x0,ci,cs,options)
+    @test isapprox(output_nesterov["RESULT"],[1.0 ; 3.0],rtol=1E-2)
+    @test output_nesterov["CONVERGED"]
+    println("\nNumber of iterations using Nesterov ",output_nesterov["ITERS"])
 
     #println("\n","# Result #")
     #show(IOContext(stdout, :compact => false, :limit => false), "text/plain", [x_opt [3.0 ; 5.0]])
@@ -117,6 +131,15 @@
     println("\nNumber of iterations ",output["ITERS"])
     
     
+    options["NESTEROV"] = true
+    output_nesterov = GDP.Solve(df,x0,ci,cs,options)
+
+    # The test
+    @test isapprox(output_nesterov["RESULT"],[3.0 ; 0.5],rtol=1E-2)
+    @test output_nesterov["CONVERGED"]
+    println("\nNumber of iterations using Nesterov",output_nesterov["ITERS"])
+    
+
     #println("\n","# Result #")
     #show(IOContext(stdout, :compact => false, :limit => false), "text/plain", [x_opt [3.0 ; 5.0]])
     println("\n")
@@ -152,12 +175,21 @@
     
     output = GDP.Solve(df,x0,ci,cs,options)
 
-
     # The test
     @test isapprox(output["RESULT"],[0.0 ; -1.0],rtol=1E-2)
     @test output["CONVERGED"]
     println("\nNumber of iterations ",output["ITERS"])
-   
+
+    
+    options["NESTEROV"] = true
+    output_nesterov = GDP.Solve(df,x0,ci,cs,options)
+
+    # The test
+    @test isapprox(output_nesterov["RESULT"],[0.0 ; -1.0],rtol=1E-2)
+    @test output_nesterov["CONVERGED"]
+    println("\nNumber of iterations using Nesterov ",output_nesterov["ITERS"])
+
+
     #println("\n","# Result #")
     #show(IOContext(stdout, :compact => false, :limit => false), "text/plain", [x_opt [3.0 ; 5.0]])
     println("\n")
@@ -198,7 +230,19 @@
     println("\nNumber of iterations ",output["ITERS"])
     #@show output
  
+
+
+    options["NESTEROV"] = true
+    output_nesterov = GDP.Solve(df,x0,ci,cs,options)
     
+ 
+    # The test
+    @test isapprox(output_nesterov["RESULT"],[1.0 ; 1.0],rtol=1E-2)
+    @test output_nesterov["CONVERGED"]
+    println("\nNumber of iterations using Nesterov ",output_nesterov["ITERS"])
+    #@show output
+ 
+
     #println("\n","# Result #")
     #show(IOContext(stdout, :compact => false, :limit => false), "text/plain", [output["RESULT"] [1.0 ; 1.0]])
     println("\n")
