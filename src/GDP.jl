@@ -37,9 +37,9 @@ function Check_inputs(df::Function, x0::Array{Float64}, ci::Array{Float64}, cs::
     #
     nmax_iter  = inputs["NITER"]
     tol_norm   = inputs["TOL_NORM"]
-    alpha_0    = inputs["ALPHA_0"]
+    α_0    = inputs["ALPHA_0"]
     factor_z   = inputs["FACTOR_Z"]
-    min_alpha  = inputs["MIN_STEP"]
+    min_α  = inputs["MIN_STEP"]
     flag_show  = inputs["SHOW"]
     
     
@@ -55,17 +55,17 @@ function Check_inputs(df::Function, x0::Array{Float64}, ci::Array{Float64}, cs::
     # Check if tol_norm is in (0,1)
     @assert 0.0<tol_norm<1.0 "Check_inputs:: TOL_NORM must be in (0,1)"
 
-    # Check if alpha_0 is > 0 
-    @assert alpha_0>0 "Check_inputs:: ALPHA_0 must be > 0"
+    # Check if α_0 is > 0 
+    @assert α_0>0 "Check_inputs:: ALPHA_0 must be > 0"
 
     # Check if factor_z is < 1
     @assert 0<factor_z<1 "Solve::Check_inputs:: FACTOR_Z must be in (0,1)"
 
-    # Check if min_alpha is smaller than alpha_0 and if it is positive as well
-    @assert 0 < min_alpha < alpha_0 "Solve::Check_inputs:: MIN_STEP must be in (0,ALPHA_0)"
+    # Check if min_α is smaller than α_0 and if it is positive as well
+    @assert 0 < min_α < α_0 "Solve::Check_inputs:: MIN_STEP must be in (0,ALPHA_0)"
 
     # Return input parameters to the caller
-    return nmax_iter,tol_norm, alpha_0, factor_z, min_alpha, flag_show
+    return nmax_iter,tol_norm, α_0, factor_z, min_α, flag_show
 
 end
 
@@ -203,10 +203,10 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
 
     # Test the inputs for any inconsistency and recover 
     # the input parameters  
-    niter, tol, l0, factor_z, alpha_min, flag_show = Check_inputs(df, x0, ci, cs, inputs)
+    niter, tol, α0, factor_z, α_min, flag_show = Check_inputs(df, x0, ci, cs, inputs)
 
-    # counts if the number of iterations with step <= alpha_min
-    cont_alpha_min = 0
+    # counts if the number of iterations with step <= α_min
+    cont_α_min = 0
 
     # k means actual iteration and K means next iteration
 
@@ -214,23 +214,26 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
     lvar = 1:length(x0)
 
     # Steps
-    lk = l0
-    lK = l0
+    lk = α0
+    lK = α0
 
     # Thetas    
-    Tk = Inf
-    TK = Inf
+    θk = Inf
+    θK = Inf
 
     # Copy of x0, for subsequent iterations
     xk = copy(x0)
+    x = copy(x0)
+    xK = copy(x0)
 
     # Initial gradient
     Dk = df(xk) 
+    DK = copy(Dk)
 
     ###################################################  STEPS 2,3 and 4 in ALg. 3 ###################################################
 
     # First step 
-    xK = xk - l0*Dk
+    @. xK = xk - α0*Dk
 
     #
     # Project x and obtains active and inactive sets of variables  
@@ -246,15 +249,15 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
     ###################################################  STEP 5 in ALg. 3 ###################################################
     flag_converged = false
     norm_D = 0.0
-    delta_m = []
-    delta_M = []
+    delta_m = Float64[]
+    delta_M = Float64[]
     contador = 1
     Prg = Progress(niter, 1, "Minimizing objective function...")
     tempo = @elapsed  begin
     for k=2:niter
  
         # Sensitivity at this point
-        DK = df(xK) 
+        DK .= df(xK) 
 
         ######################################### Verify for fist order conditions ############################################# 
         # Norm at free positions (not bounded)
@@ -269,6 +272,7 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
         # Increment counter 
         contador += 1
 
+
         # Check for first order conditions 
         if  norm_D<=tol && (all(delta_m .>= 0.0)||isempty(delta_m)) && (all(delta_M .<= 0.0)||isempty(delta_M))
             if flag_show 
@@ -280,24 +284,30 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
 
         ########################################### Eq. 36 in the reference paper ####################################
         for i in LinearIndices(DK)
-            if (  isapprox(xK[i],ci[i],atol=l0) && DK[i]>0) || ( isapprox(xK[i],cs[i],atol=l0) && DK[i]<0)
+            if (  isapprox(xK[i],ci[i],atol=α0) && DK[i]>0) || ( isapprox(xK[i],cs[i],atol=α0) && DK[i]<0)
                DK[i] =0
             end      
         end    
 
         ######################################### STEP 6 in Alg. 3 ################################################### 
-        T1 = sqrt(1+Tk)*lk
+        T1 = sqrt(1+θk)*lk
         T2 = norm(xK-xk) / (2*norm(DK-Dk))
-        passo  = min(T1,T2)
+        α  = min(T1,T2)
 
-        if isnan(passo)
+        if isnan(α)
             if flag_show
                println("It seems that we are stuck, since Δx=$(norm(xK-xk)) and ΔD=$(norm(DK-Dk)). Skipping the loop." ) 
             end   
             break
         end
 
-        @assert passo > 0.0 "GPD::Solve:: step is <=0 ($passo)  $T1  $T2 $Tk $lk $(norm(xK-xk))" 
+        @assert α > 0.0 "GPD::Solve:: step is <=0 ($α)  $T1  $T2 $θk $lk $(norm(xK-xk))" 
+        if isinf(α) 
+            println("**************************************************")
+            println("Step in Inf ", norm(xK-xk)," ", (2*norm(DK-Dk)))
+            α=1.0
+            #break
+        end
 
         ######################################### STEP 9 in Alg. 3 (Eq. 38) ##########################################
         Alpha_S = Float64[]
@@ -312,9 +322,9 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
         ######################################### STEPS 8 to 15 in Alg. 3 ############################################ 
         aflag = true
         while (aflag)
-            if passo in Alpha_S
-               println("It hapened ! $passo")
-               passo = passo*factor_z
+            if α in Alpha_S
+               println("It hapened ! $α")
+               α = α*factor_z
             else
                aflag = false
             end
@@ -322,7 +332,7 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
 
         
         # next step
-        x = xK - passo*DK
+        @. x = xK - α*DK
 
         #
         # Project x and obtains active and inactive sets of variables  
@@ -334,13 +344,13 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
         #
         # If the minimum step allowed by the user is used in at least 5 iterations, we can bail outputs
         #
-        if passo <= alpha_min
-            cont_alpha_min += 1
+        if α <= α_min
+            cont_α_min += 1
          else 
-            cont_alpha_min = 1
+            cont_α_min = 1
          end
  
-         if cont_alpha_min==5
+         if cont_α_min==5
              if flag_show
                 println(" Step is too small during 5 consecutive iterations. Skipping")
              end   
@@ -349,17 +359,20 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
  
 
         # Step 19 in Alg. 3
-        T = passo/lk
+        θ = α/lk
 
         # Offsets
         xk .= xK
         xK .= x
 
         lk = lK
-        lK = passo
+        lK = α
 
-        Tk = TK
-        TK = T
+        θk = θK
+        θK = θ
+
+        # Compute the change in gradient, to show in the report
+        change_DK = norm(DK.-Dk)
 
         Dk .= DK
 
@@ -369,7 +382,10 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
             (:Iteration,k), 
             (:"Norm at free variables",norm_D), 
             (:"Target norm",tol),
-            (:"Current Step",passo),
+            (:"Current Step",α),
+            (:"Current θ",θ),
+            (:"Change in design variables",norm(xK.-xk)),
+            (:"Change in gradient",change_DK),
             (:"Number of variables in the lower bound",length(active_r_ci)),
             (:"First order for lower bound?",all(delta_m .>= -tol)||isempty(delta_m)),
             (:"Number of variables in the upper bound",length(active_r_cs)),
