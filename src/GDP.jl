@@ -230,6 +230,13 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
     Dk = df(xk) 
     DK = copy(Dk)
 
+    ########################################### Eq. 36 in the reference paper ####################################
+    for i in LinearIndices(DK)
+       if (  isapprox(xK[i],ci[i],atol=α0) && Dk[i]>0) || ( isapprox(xK[i],cs[i],atol=α0) && Dk[i]<0)
+          Dk[i] =0
+       end      
+    end  
+
     ###################################################  STEPS 2,3 and 4 in ALg. 3 ###################################################
 
     # First step 
@@ -305,7 +312,7 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
         if isinf(α) 
             println("**************************************************")
             println("Step in Inf ", norm(xK-xk)," ", (2*norm(DK-Dk)))
-            α=1.0
+            α=α0
             #break
         end
 
