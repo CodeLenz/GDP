@@ -1,10 +1,15 @@
 # GDP
-Bounding Box Optimizer for large problems where the optimal solution lies on the boundary. The algorithm is a modified Steepest Descent projecting infeasible variables to the boundary of the feasible design space (defined by the side constraints ci and cs) and with no line-search (there is no need to inform the objective function). 
+Bounding Box Optimizer for large problems where the optimal solution lies on the boundary. The algorithm is a modified Steepest Descent projecting infeasible variables to the boundary of the feasible design space (defined by the side constraints ci and cs) and with no line-search. The objective function is used when the gradient is the same during two consecutive iterations.. 
 
 Example
 
 ```julia
     using GDP
+
+    # Objective function
+    function f(x) 
+        100*(x[2]-x[1]^2)^2+(x[1]-1)^2
+    end
 
     # Gradient of objective function   
     function df(x)
@@ -23,7 +28,7 @@ Example
     # Call optimizer
     options = GDP.Init()
     options["NITER"] = 10_000
-    output = GDP.Solve(df,x0,ci,cs,options)
+    output = GDP.Solve(f,df,x0,ci,cs,options)
 
     # Recovering solution
     x_opt = output["RESULT"]
