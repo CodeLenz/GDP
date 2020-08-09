@@ -34,7 +34,7 @@
     # Call optimizer
     options = GDP.Init()
     options["NITER"] = 1000
-    output = GDP.Solve(df,x0,ci,cs,options)
+    output = GDP.Solve(f,df,x0,ci,cs,options)
   
     
     # The test
@@ -77,7 +77,7 @@
     options = GDP.Init()
     options["NITER"] = 1000
     options["TOL_NORM"] = 1E-8
-    output = GDP.Solve(df,x0,ci,cs,options)
+    output = GDP.Solve(f,df,x0,ci,cs,options)
   
     # The test
     @test isapprox(output["RESULT"],[10*ones(10) ; 11:49 ; 50*ones(51)],rtol=1E-4)
@@ -124,7 +124,7 @@
     # Call optimizer
     options = GDP.Init()
     options["NITER"] = 1000
-    output = GDP.Solve(df,x0,ci,cs,options)
+    output = GDP.Solve(f,df,x0,ci,cs,options)
    
   
     # The test
@@ -163,7 +163,7 @@
     # Call optimizer
     options = GDP.Init()
     options["NITER"] = 1000
-    output = GDP.Solve(df,x0,ci,cs,options)
+    output = GDP.Solve(f,df,x0,ci,cs,options)
   
 
     # The test
@@ -202,7 +202,7 @@
     # Call optimizer
     options = GDP.Init()
     options["NITER"] = 10_000
-    output = GDP.Solve(df,x0,ci,cs,options)
+    output = GDP.Solve(f,df,x0,ci,cs,options)
   
     # The test
     @test isapprox(output["RESULT"],[0.8 ; 0.64],rtol=1E-2)
@@ -215,5 +215,41 @@
     println("\n")
 
   
+    println("\n\n############\n  Test 2.6\n############")
+    # Linear Function (new method does not work, so we have to revert to Armijo)
+    
+     function f(x) 
+         10*x[1] + 20*x[2]
+     end
+ 
+        
+     function df(x)
+         df1 = 10.0
+         df2 = 20.0
+         return [df1 ; df2]
+     end
+ 
+     # Ponto inicial
+     x0 = [10.0 ; 10.0]
+ 
+     # Restrições laterais
+     ci = [-1.0 ; -5.0]
+     cs = [Inf ; Inf] 
+ 
+     # Call optimizer
+     options = GDP.Init()
+     options["NITER"] = 10_000
+     output = GDP.Solve(f,df,x0,ci,cs,options)
+   
+     # The test
+     @test isapprox(output["RESULT"],[-1.0 ; -5.0],rtol=1E-2)
+     @test output["CONVERGED"]
+     println("\nNumber of iterations ",output["ITERS"])
+     
+   
+     #println("\n","# Resultado #")
+     #show(IOContext(stdout, :compact => false, :limit => false), "text/plain", [x_opt [3.0 ; 5.0]])
+     println("\n")
+
 
 end #testset

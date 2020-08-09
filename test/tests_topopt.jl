@@ -12,7 +12,7 @@
     println("Topology can be displayed with: gmsh saida.pos")
 
     include("testcase_large/topopt_flex_proj/main_LA.jl")
-    tempo1= @timed begin xs = Min_Compliance(20,12); end
+    begin xs = Min_Compliance(20,12); end
 
     # Read a reference solution
     using DelimitedFiles

@@ -133,7 +133,7 @@ function Min_Compliance(nx::Int64,ny::Int64,filtro::String="Projecao",
 
 
            # Chama o otimizador caseiro...
-           outputs =  GDP.Solve(df, x, ci, cs, options)
+           outputs =  GDP.Solve(f,df, x, ci, cs, options)
 
            # Extrai o ponto devolvido pelo otimizador
            x_opt = outputs["RESULT"]
