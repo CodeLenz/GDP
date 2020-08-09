@@ -4,11 +4,10 @@ module GDP
 
 
   using LinearAlgebra, ProgressMeter, Dates
-
-
+ 
   export Solve, Init
 
-
+ 
 
   # 
   # Generate the dictionary with default values (optional arguments)
@@ -131,6 +130,62 @@ end
 end # Project
 
 
+  #
+  # Modified Line Search (Armijo). 
+  #
+  function Armijo_Projected(f::Function,x0::Array{Float64}, D::Array{Float64}, ci::Array{Float64}, cs::Array{Float64},  c::Float64=0.1,
+                            τ::Float64=0.5, α_ini::Float64=10.0, α_min::Float64=1E-12)
+
+    # We start with one function evaluation
+    f0 = f(x0)
+
+    # Local vectors
+    xn = copy(x0)
+    Δx = copy(x0)
+
+    # Initial step
+    α = α_ini
+
+    # Flag (success)
+    flag_success = false
+
+    # Main Loop
+    while true
+
+        # Candidate point (xn)
+        xn .= max.(ci,min.(cs,x0 - α*D))
+
+        # Δx
+        @. Δx = xn-x0 
+
+        # Left side
+        fn = f(xn)
+
+        # Rigth side
+        right = f0 + c*dot(D,Δx)
+
+        # First Wolfe condition
+        if fn <= right
+            flag_success = true
+            break
+        end #fn <= right
+
+        # Otherwise, decrease step    
+        α = α*τ
+
+        # Check for minimum step
+        if α<=α_min
+            break
+        end
+
+    end #while true
+
+
+    # return 
+    return α, flag_success
+
+end #Armijo_Projected
+
 
 #
 # Main subroutine. This subroutine follows Algorithm 3 in the reference paper
@@ -147,6 +202,7 @@ end # Project
   \\
   \\
   The inputs for this function are: \\
+  f::Function         -> Objective function \\  
   df::Function        -> Gradient of f(x)  -> df(x)->Array{Float64,1} \\
   x0::Array{Float64}  -> Initial point \\
   ci::Array{Float64}  -> Lower side constraints \\
@@ -181,7 +237,7 @@ end # Project
   unbounded variables and ITERS is the effective number of iterations. \\
   \\
   """
-function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict()) 
+function Solve(f::Function,df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict()) 
 
     # Size of the problem
     n = length(x0)
@@ -310,19 +366,21 @@ function Solve(df::Function, x0::Array{Float64}, ci=[], cs=[], inputs=Dict())
 
         @assert α > 0.0 "GPD::Solve:: step is <=0 ($α)  $T1  $T2 $θk $lk $(norm(xK-xk))" 
         if isinf(α) 
-            println("**************************************************")
-            println("Step in Inf ", norm(xK-xk)," ", (2*norm(DK-Dk)))
-            α=α0
-            #break
+            println("Using Armijo's Backtracking LS since the gradient is constant in this region")
+            α, flag_armijo = Armijo_Projected(f,xK, DK, ci, cs, 0.1, 0.5, 10.0, α_min)
+            println("Armijo's step ",α)
+            if !flag_armijo
+               break
+            end
         end
 
         ######################################### STEP 9 in Alg. 3 (Eq. 38) ##########################################
         Alpha_S = Float64[]
         for i in free_x
             if DK[i]>0 && ci[i]>-Inf
-               push!(Alpha_S, (xk[i]-ci[i])/DK[i])
+               push!(Alpha_S, (xK[i]-ci[i])/DK[i])
             elseif DK[i]<0 && cs[i]< Inf
-               push!(Alpha_S, (xk[i]-cs[i])/DK[i])
+               push!(Alpha_S, (xK[i]-cs[i])/DK[i])
             end        
         end
 
@@ -427,3 +485,6 @@ end
 
 
 end #module
+
+
+
