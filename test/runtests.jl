@@ -15,6 +15,6 @@ println("#"^80, "\n"," "^40,"  Test 2\n","#"^80)
 
 @time include("tests_constrained.jl")
 
-println("#"^80, "\n"," "^40,"  Test 3 \n","#"^80)
+#println("#"^80, "\n"," "^40,"  Test 3 \n","#"^80)
 
-@time include("tests_topopt.jl")
+#@time include("tests_topopt.jl")
