@@ -7,7 +7,8 @@ module GDP
  
   export Solve, Init
 
- 
+  global VALID_INPUTS 
+  VALID_INPUTS = ["NITER","TOL_NORM","ALPHA_0","FACTOR_Z","MIN_STEP","SHOW"]
 
   # 
   # Generate the dictionary with default values (optional arguments)
@@ -30,6 +31,16 @@ module GDP
 # Check if the inputs are consistent
 #
 function Check_inputs(df::Function, x0::Array{Float64}, ci::Array{Float64}, cs::Array{Float64}, inputs::Dict)
+
+    # Check input keys
+    global VALID_INPUTS
+    for chave in keys(inputs)
+        if !(chave in VALID_INPUTS)
+            println("Invalid key in GDP::inputs $chave")
+            println("Valid keys are $(VALID_INPUTS)")
+            error("Invalid key")
+        end
+    end
 
     #
     # First thing is to extract the input parameters 
