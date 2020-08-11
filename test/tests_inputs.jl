@@ -110,5 +110,19 @@
      options["MIN_STEP"]=options["ALPHA_0"]+0.01
      @test_throws AssertionError GDP.Solve(f,df,x0,ci,cs,options)
  
+
+    # Restore default parameters
+    options = GDP.Init()
+
+    #
+    # Check empty key
+    #
+    x0 = ones(10); ci = zeros(10);  cs = 2*ones(10)
+    options[""]=0.0
+    @test_throws ErrorException GDP.Solve(f,df,x0,ci,cs,options)  
    
+
+    # Restore default parameters
+    options = GDP.Init()
+
 end
