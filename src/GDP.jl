@@ -5,7 +5,8 @@ module GDP
 
   using LinearAlgebra, ProgressMeter, Dates
  
-  export Solve, Init
+  # Export methods. Project! is used in LTOP
+  export Solve, Init,Project!
 
   # Used to check if the input dictionary is corectly defined by the user 
   global VALID_INPUTS 
