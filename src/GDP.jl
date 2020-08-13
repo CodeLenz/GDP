@@ -7,6 +7,7 @@ module GDP
  
   export Solve, Init
 
+  # Used to check if the input dictionary is corectly defined by the user 
   global VALID_INPUTS 
   VALID_INPUTS = ["NITER","TOL_NORM","ALPHA_0","FACTOR_Z","MIN_STEP","SHOW"]
 
@@ -474,6 +475,11 @@ function Solve(f::Function,df::Function, x0::Array{Float64}, ci=[], cs=[], input
 
      # Final report
     if flag_show
+
+        # Skip the same number of lines as in the Fancy report right above. It is used 
+        # to avoid superposition
+        println(repeat("\n",14))
+
         println("\n********************************************************")
         println("End of the main optimization Loop")
         println("Number of variables    : $(n)")
