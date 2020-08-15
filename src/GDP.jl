@@ -10,7 +10,7 @@ module GDP
 
   # Used to check if the input dictionary is corectly defined by the user 
   global VALID_INPUTS 
-  VALID_INPUTS = ["NITER","TOL_NORM","ALPHA_0","FACTOR_Z","MIN_STEP","SHOW"]
+  VALID_INPUTS = ["NITER","TOL_NORM","ALPHA_0","FACTOR_Z","MIN_STEP","SHOW","WITH_LS"]
 
   # 
   # Generate the dictionary with default values (optional arguments)
@@ -24,6 +24,7 @@ module GDP
     push!(inputs,"FACTOR_Z"=>0.99)
     push!(inputs,"MIN_STEP"=>1E-12)
     push!(inputs,"SHOW"=>true)
+    push!(inputs,"WITH_LS"=>false)
     
     return inputs
 
@@ -53,6 +54,7 @@ function Check_inputs(df::Function, x0::Array{Float64}, ci::Array{Float64}, cs::
     factor_z   = inputs["FACTOR_Z"]
     min_α  = inputs["MIN_STEP"]
     flag_show  = inputs["SHOW"]
+    with_ls = inputs["WITH_LS"]
     
     
     # Check if the length of x0, ci and cs are the same
@@ -77,7 +79,7 @@ function Check_inputs(df::Function, x0::Array{Float64}, ci::Array{Float64}, cs::
     @assert 0 < min_α < α_0 "Solve::Check_inputs:: MIN_STEP must be in (0,ALPHA_0)"
 
     # Return input parameters to the caller
-    return nmax_iter,tol_norm, α_0, factor_z, min_α, flag_show
+    return nmax_iter,tol_norm, α_0, factor_z, min_α, flag_show, with_ls
 
 end
 
@@ -229,6 +231,7 @@ end #Armijo_Projected
   push!(inputs,"FACTOR_Z"=>0.99) \\
   push!(inputs,"MIN_STEP"=>1E-12) \\
   push!(inputs,"SHOW"=>true) \\
+  push!(inputs,"WITH_LS"=>true) \\
      
   where \\ 
   
@@ -272,7 +275,7 @@ function Solve(f::Function,df::Function, x0::Array{Float64}, ci=[], cs=[], input
 
     # Test the inputs for any inconsistency and recover 
     # the input parameters  
-    niter, tol, α0, factor_z, α_min, flag_show = Check_inputs(df, x0, ci, cs, inputs)
+    niter, tol, α0, factor_z, α_min, flag_show, with_ls = Check_inputs(df, x0, ci, cs, inputs)
 
     # counts if the number of iterations with step <= α_min
     cont_α_min = 0
@@ -370,6 +373,13 @@ function Solve(f::Function,df::Function, x0::Array{Float64}, ci=[], cs=[], input
         T2 = norm(xK-xk) / (2*norm(DK-Dk))
         α  = min(T1,T2)
 
+        if with_ls
+            α, flag_armijo = Armijo_Projected(f,xK, DK, ci, cs, 0.1, 0.5, 10.0, α_min)
+            if !flag_armijo
+                break
+             end
+        end
+
         if isnan(α)
             if flag_show
                println("It seems that we are stuck, since Δx=$(norm(xK-xk)) and ΔD=$(norm(DK-Dk)). Skipping the loop." ) 
@@ -378,7 +388,7 @@ function Solve(f::Function,df::Function, x0::Array{Float64}, ci=[], cs=[], input
         end
 
         @assert α > 0.0 "GPD::Solve:: step is <=0 ($α)  $T1  $T2 $θk $lk $(norm(xK-xk))" 
-        if isinf(α) 
+        if isinf(α) && !with_ls
             println("Using Armijo's Backtracking LS since the gradient is constant in this region")
             α, flag_armijo = Armijo_Projected(f,xK, DK, ci, cs, 0.1, 0.5, 10.0, α_min)
             println("Armijo's step ",α)
@@ -458,6 +468,7 @@ function Solve(f::Function,df::Function, x0::Array{Float64}, ci=[], cs=[], input
         if flag_show
             ProgressMeter.next!(Prg; showvalues = [
             (:Iteration,k), 
+            (:"With ls ",with_ls),
             (:"Norm at free variables",norm_D), 
             (:"Target norm",tol),
             (:"Current Step",α),
@@ -484,6 +495,7 @@ function Solve(f::Function,df::Function, x0::Array{Float64}, ci=[], cs=[], input
         println("\n********************************************************")
         println("End of the main optimization Loop")
         println("Number of variables    : $(n)")
+        println("With ls                : ",with_ls)
         println("Free variables         : ", length(free_x))
         println("Blocked variables      : ", length(active_r),": ",  length(active_r_ci)," for lower bound ",length(active_r_cs)," for upper bound")
         println("Number of iterations   : ", contador , " of ",niter)
