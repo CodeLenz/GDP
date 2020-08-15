@@ -42,7 +42,17 @@
     println("\n")
 
 
+   println("\n\n############\n  Test 1.1 (ls) \n############")
+   options["WITH_LS"] = true
+    
+   output = GDP.Solve(f,df,x0,ci,cs,options)
+    
+   # The tests
+   @test isapprox(output["RESULT"],[3.0 ; 5.0],rtol=1E-2)
+   @test output["CONVERGED"]
+   println("\nNumber of iterations ",output["ITERS"])
 
+    
 
    println("\n\n############\n  Test 1.2\n############")
    #  Booth
@@ -76,6 +86,16 @@
     @test output["CONVERGED"]
     println("\nNumber of iterations ",output["ITERS"])
    
+    println("\n\n############\n  Test 1.2 (ls) \n############")
+    options["WITH_LS"] = true
+    
+    output = GDP.Solve(f,df,x0,ci,cs,options)
+   
+    # The test
+    @test isapprox(output["RESULT"],[1.0 ; 3.0],rtol=1E-2)
+    @test output["CONVERGED"]
+    println("\nNumber of iterations ",output["ITERS"])
+    
 
     #println("\n","# Result #")
     #show(IOContext(stdout, :compact => false, :limit => false), "text/plain", [x_opt [3.0 ; 5.0]])
@@ -116,6 +136,14 @@
     @test output["CONVERGED"]
     println("\nNumber of iterations ",output["ITERS"])
     
+    println("\n\n############\n  Test 1.3 (ls) \n############")
+    options["WITH_LS"] = true 
+    output = GDP.Solve(f,df,x0,ci,cs,options)
+   
+    # The test
+    @test isapprox(output["RESULT"],[3.0 ; 0.5],rtol=1E-2)
+    @test output["CONVERGED"]
+    println("\nNumber of iterations ",output["ITERS"])
     
     #println("\n","# Result #")
     #show(IOContext(stdout, :compact => false, :limit => false), "text/plain", [x_opt [3.0 ; 5.0]])
@@ -158,6 +186,15 @@
     @test output["CONVERGED"]
     println("\nNumber of iterations ",output["ITERS"])
    
+    println("\n\n############\n  Test 1.4 (ls) \n############")
+    options["WITH_LS"] = true 
+    output = GDP.Solve(f,df,x0,ci,cs,options)
+    # The test
+    @test isapprox(output["RESULT"],[0.0 ; -1.0],rtol=1E-2)
+    @test output["CONVERGED"]
+    println("\nNumber of iterations ",output["ITERS"])
+   
+
     #println("\n","# Result #")
     #show(IOContext(stdout, :compact => false, :limit => false), "text/plain", [x_opt [3.0 ; 5.0]])
     println("\n")
@@ -198,6 +235,14 @@
     println("\nNumber of iterations ",output["ITERS"])
     #@show output
  
+    println("\n\n############\n  Test 1.5 (ls) \n############")
+    options["WITH_LS"] = true 
+    output = GDP.Solve(f,df,x0,ci,cs,options)
+    # The test
+    @test isapprox(output["RESULT"],[1.0 ; 1.0],rtol=1E-2)
+    @test output["CONVERGED"]
+    println("\nNumber of iterations ",output["ITERS"])
+    
     
     #println("\n","# Result #")
     #show(IOContext(stdout, :compact => false, :limit => false), "text/plain", [output["RESULT"] [1.0 ; 1.0]])
