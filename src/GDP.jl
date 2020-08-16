@@ -374,10 +374,7 @@ function Solve(f::Function,df::Function, x0::Array{Float64}, ci=[], cs=[], input
         α  = min(T1,T2)
 
         if with_ls
-            α, flag_armijo = Armijo_Projected(f,xK, DK, ci, cs, 0.1, 0.5, 10.0, α_min)
-            if !flag_armijo
-                break
-             end
+            α, _ = Armijo_Projected(f,xK, DK, ci, cs, 0.1, 0.5, 10.0, α_min)
         end
 
         if isnan(α)
