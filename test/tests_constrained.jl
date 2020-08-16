@@ -96,7 +96,7 @@
     output = GDP.Solve(f,df,x0,ci,cs,options)
     # The test
     @test isapprox(output["RESULT"],[10*ones(10) ; 11:49 ; 50*ones(51)],rtol=1E-4)
-    @test output["CONVERGED"]
+    #@test output["CONVERGED"]
     println("\nNumber of iterations ",output["ITERS"])
 
 
@@ -145,7 +145,7 @@
     # The test
     resp = 10*ones(100); [resp[i]=i for i in 12:2:100]
     @test isapprox(output["RESULT"],resp,rtol=1E-4) 
-    #@test output["CONVERGED"]
+    @test output["CONVERGED"]
     println("\nNumber of iterations ",output["ITERS"])
 
     println("\n\n############\n  Test 2.3 (ls) \n############")
