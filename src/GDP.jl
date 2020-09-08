@@ -302,7 +302,7 @@ function Solve(f::Function,df::Function, x0::Array{Float64}, ci=[], cs=[], input
     Dk = df(xk) 
 
     # Normalize Gradient
-    Dk ./= norm(Dk)
+    # Dk ./= norm(Dk)
 
     DK = copy(Dk)
 
@@ -343,7 +343,7 @@ function Solve(f::Function,df::Function, x0::Array{Float64}, ci=[], cs=[], input
         DK .= df(xK) 
 
         # Normalize
-        DK ./= norm(DK)
+        #DK ./= norm(DK)
 
         ######################################### Verify for fist order conditions ############################################# 
         # Norm at free positions (not bounded)
