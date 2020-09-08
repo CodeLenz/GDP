@@ -300,6 +300,10 @@ function Solve(f::Function,df::Function, x0::Array{Float64}, ci=[], cs=[], input
 
     # Initial gradient
     Dk = df(xk) 
+
+    # Normalize Gradient
+    Dk ./= norm(Dk)
+
     DK = copy(Dk)
 
     ########################################### Eq. 36 in the reference paper ####################################
@@ -337,6 +341,9 @@ function Solve(f::Function,df::Function, x0::Array{Float64}, ci=[], cs=[], input
  
         # Sensitivity at this point
         DK .= df(xK) 
+
+        # Normalize
+        DK ./= norm(DK)
 
         ######################################### Verify for fist order conditions ############################################# 
         # Norm at free positions (not bounded)
