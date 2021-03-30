@@ -1,4 +1,7 @@
 # GDP
+
+This optimizer should not be used: Use WallE instead.
+
 Bounding Box Optimizer for large problems where the optimal solution lies on the boundary. The algorithm is a modified Steepest Descent projecting infeasible variables to the boundary of the feasible design space (defined by the side constraints ci and cs) and with no line-search. The objective function is used when the gradient is the same during two consecutive iterations.. 
 
 Example
